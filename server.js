@@ -46,6 +46,16 @@ class Application {
      * @returns {undefined}
      */
     #routes() {
+        //Custom error handler
+        class AppError extends Error {
+            constructor(message) {
+                super();
+                this.message = message;
+                this.name = this.constructor.name;
+                this.stack =this.stack
+                this.date = moment().format('MMMM Do YYYY, h:mm:ss a');
+            }
+        }
         // form validation using a middleware
         this.#app.post(
             '/register',
@@ -76,15 +86,14 @@ class Application {
         this.#app.post(
             '/login',
             (req, res, next) => {
-                fs.readFile('data.json', (error, data) => {
+                fs.readFile('data.jsn', (error, data) => {
                     let errors = [];
 
                     if (error) {
                         errors.push(error)
-                        console.log(error)
+                        next(new AppError("File error"))
                     } else {
                         let data1 = JSON.parse(data);
-                        console.log(data1)
 
                         if (!Object.values(data1).includes(req.body.email))
                         errors.push({
@@ -99,15 +108,6 @@ class Application {
             
         );
 
-        class AppError extends Error {
-            constructor(message) {
-                super();
-                this.message = message;
-                this.name = this.constructor.name;
-                this.stack =this.stack
-                this.date = moment().format('MMMM Do YYYY, h:mm:ss a');
-            }
-        }
 
         // error in synchronous code
         this.#app.get('/panic/sync', (req, res) => {
