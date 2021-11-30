@@ -86,7 +86,7 @@ class Application {
         this.#app.post(
             '/login',
             (req, res, next) => {
-                fs.readFile('data.jsn', (error, data) => {
+                fs.readFile('data.json', (error, data) => {
                     let errors = [];
 
                     if (error) {
