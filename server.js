@@ -99,20 +99,30 @@ class Application {
             
         );
 
+        class AppError extends Error {
+            constructor(message) {
+                super();
+                this.message = message;
+                this.name = this.constructor.name;
+                this.stack =this.stack
+                this.date = moment().format('MMMM Do YYYY, h:mm:ss a');
+            }
+        }
+
         // error in synchronous code
         this.#app.get('/panic/sync', (req, res) => {
-            throw new Error("synchronous error");
+            throw new AppError("synchronous error");
             //res.send({message: "synchromous error", date: moment().format('MMMM Do YYYY, h:mm:ss a')})
         });
 
         // error in asynchronous code
         this.#app.get('/panic/async', (req, res, next) => {
-            Promise.reject(new Error("asynchronous error")).catch(error => next(error));
+            Promise.reject(new AppError("asynchronous error")).catch(error => next(error));
         });
 
         // custom not found error
         this.#app.get('*', (req, res) => {
-            throw Object.assign(new Error('Page not found on this path: ' + req.originalUrl), {
+            throw Object.assign(new AppError('Page not found on this path: ' + req.originalUrl), {
                 name: 404
             });
         });
@@ -125,17 +135,29 @@ class Application {
      * @returns {undefined}
      */
     #errors() {
+        
         // write to log file
         this.#app.use((err, req, res, next) => {
             // - add timestamp to error logs
-            //console.log()
-            fs.appendFileSync('errors.log', JSON.stringify(err, ['name', 'message', 'stack'], 4) + '\n');
+            console.log(err)
+            fs.appendFileSync('errors.log', JSON.stringify(err, ['name', 'message', 'stack', 'date'], 4) + '\n');
             next(err);
         });
 
         // - send an alert to email using sendgrid, and call next error handler
         // -Used nodemailer
-        this.#app.use((err, req, res, next)=>{
+        this.#app.use((err, req, res, next) => {
+            const message = {
+                from: {
+                    name: 'Guantai',
+                    address: 'gnmutembei99@gmail.com'
+                },
+                to: 'nicholasguantai528@gmail.com',
+                subject: "ERROR NOTIFICATION",
+                text: `Hello, this is to inform you that the following error has occurred in your application
+                \n Name: ${err.name}\n Message: ${err.message}\n Date: ${err.date}.\n Stack: ${err.stack} \n Please investigate and fix it.\n Thank you.`,
+                
+            }
             sendEmail(message)
             res.send("email sent")
             next(err);
